@@ -159,7 +159,7 @@ namespace NotOnlyFans.Pages
                     RefreshCard(light);
                 }
 
-                SyncSwitch.IsEnabled = App.Sensors.IsConnected && lights.Count > 1;
+                Unavailable.Set(SyncSwitch, state is not null && lights.Count < 2 ? "Sync all needs two or more lights." : null, App.Sensors.IsConnected);
                 SyncSwitch.IsOn = Sync;
 
                 var selected = lights.FirstOrDefault(l => l.Key == _selected);
@@ -215,10 +215,13 @@ namespace NotOnlyFans.Pages
         /// The effect segments are 80 px each when there is room; in a narrow window they shrink to their text, so all
         /// five fit (the cards row is as wide as the effect card).
         /// </summary>
+        /// <summary>The effect segments (each in a host that shows why it is unavailable, see <see cref="Unavailable"/>).</summary>
+        private IEnumerable<Button> EffectList => EffectButtons.Children.OfType<Border>().Select(b => b.Child).OfType<Button>();
+
         private void FitEffects()
         {
             double min = LightCards.ActualWidth is > 0 and < 500 ? 0 : 80;
-            foreach (var button in EffectButtons.Children.OfType<Button>())
+            foreach (var button in EffectList)
             {
                 if (button.MinWidth != min)
                 {
@@ -390,9 +393,16 @@ namespace NotOnlyFans.Pages
                     : "";
             EditingHint.Visibility = EditingHint.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-            foreach (Button b in EffectButtons.Children.Cast<Button>())
+            // Effects a light can't show (with Sync all: any of the lights) stay greyed, with the reason on hover.
+            List<LightInfo> shown = sync ? State?.Lights ?? [light] : [light];
+            foreach (Button b in EffectList)
             {
-                Select(b, !untouched && (string)b.Tag == setting.Effect.ToString());
+                var kind = Enum.Parse<LightEffect>((string)b.Tag);
+                Select(b, !untouched && kind == setting.Effect);
+                var cannot = shown.FirstOrDefault(l => !l.Effects.Contains(kind));
+                Unavailable.Set(b, cannot is null ? null
+                    : sync ? $"{NameOf(cannot)} can't show this effect."
+                    : "This light can't show this effect.");
             }
             foreach (Button b in SpeedButtons.Children.Cast<Button>())
             {

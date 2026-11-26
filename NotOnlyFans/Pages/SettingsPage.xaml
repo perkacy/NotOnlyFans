@@ -165,6 +165,23 @@
                             Click="OverlayMove_Click" />
                 </Grid>
             </Border>
+
+            <!-- ===== Help ===== -->
+            <TextBlock Text="Help" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,20,0,4" />
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock Text="Diagnostics" />
+                        <TextBlock Text="Something doesn't work on this PC? Copy a report and paste it into your bug report: what NotOnlyFans found (hardware, sensors, fans, lights), its settings, other fan or RGB software running and recent errors. No user or computer names." Style="{StaticResource Sub}" />
+                    </StackPanel>
+                    <Button x:Name="DiagnosticsButton" Grid.Column="1" MinWidth="160" VerticalAlignment="Center"
+                            Content="Copy diagnostics" Click="Diagnostics_Click" />
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>

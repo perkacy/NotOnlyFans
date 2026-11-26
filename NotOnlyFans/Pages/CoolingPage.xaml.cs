@@ -570,14 +570,19 @@ namespace NotOnlyFans.Pages
             float? duty = FanCatalog.Now(fan.Control);
             StatusRpm.Text = rpm is 0 ? "Stopped" : SensorFormat.Format("Fan", rpm);
             StatusSpeed.Text = duty is null ? SensorFormat.NoValue : SensorFormat.Format("Control", duty);
-            bool canControl = fan.ControlKey is not null && App.Sensors.IsConnected;
-            ModeButtons.Visibility = fan.ControlKey is null ? Visibility.Collapsed : Visibility.Visible;
+            // Modes this fan can't use stay greyed, with the reason on hover.
+            bool connected = App.Sensors.IsConnected;
             NoControlText.Visibility = fan.ControlKey is null ? Visibility.Visible : Visibility.Collapsed;
-            ModeCurve.IsEnabled = canControl && _sources.Count > 0;
-            ModeFixed.IsEnabled = canControl;
-            ModeMix.IsEnabled = canControl && _sources.Count > 0;
-            ModeOffset.IsEnabled = canControl && _followFans.Count > 0;
-            ModeBios.IsEnabled = canControl;
+            string? noControl = fan.ControlKey is null
+                ? "This fan reports its speed, but the motherboard or the graphics card doesn't let Windows set it."
+                : null;
+            string? noTemperature = _sources.Count == 0 ? "No temperature sensor was found to follow." : null;
+            string? noFan = _followFans.Count == 0 ? "There is no other fan here NotOnlyFans can control to follow." : null;
+            Unavailable.Set(ModeCurve, noControl ?? noTemperature, connected);
+            Unavailable.Set(ModeFixed, noControl, connected);
+            Unavailable.Set(ModeMix, noControl ?? noTemperature, connected);
+            Unavailable.Set(ModeOffset, noControl ?? noFan, connected);
+            Unavailable.Set(ModeBios, noControl, connected);
             ModeBios.Content = fan.IsGpu ? "Auto" : "BIOS";
 
             var setting = FanCatalog.Setting(fan);
@@ -769,7 +774,11 @@ namespace NotOnlyFans.Pages
             CalibrationResult? last = key is not null && control?.Calibrations.TryGetValue(key, out var r) == true ? r : null;
 
             CalibrateButton.Content = here && running ? "Cancel" : last is null ? "Calibrate" : "Calibrate again";
-            CalibrateButton.IsEnabled = App.Sensors.IsConnected && !(running && !here) && control?.Emergency != true;
+            Unavailable.Set(CalibrateButton,
+                control?.Emergency == true ? "Every fan runs at 100% while a sensor is at the emergency temperature."
+                : running && !here ? "Another fan is being calibrated. One fan at a time."
+                : null,
+                App.Sensors.IsConnected);
             CalibrationBar.Visibility = here && running ? Visibility.Visible : Visibility.Collapsed;
             CalibrationBar.Value = here ? run!.Progress * 100 : 0;
 

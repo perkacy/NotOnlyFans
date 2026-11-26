@@ -154,8 +154,14 @@ namespace NotOnlyFans.Pages
             _settingControls = true;
 
             bool core = gpu.CoreMax > gpu.CoreMin;
-            CoreCard.Visibility = core ? Visibility.Visible : Visibility.Collapsed;
-            if (core)
+            // What the card or its driver doesn't allow stays greyed, with the reason on hover.
+            Unavailable.SetCard(CoreCard, core ? null : "This card or its driver doesn't allow a core clock offset.", CoreSlider, CoreBox);
+            if (!core)
+            {
+                SetRange(CoreSlider, CoreBox, 0, 0, 0);
+                CoreHint.Text = "Not adjustable on this card";
+            }
+            else
             {
                 SetRange(CoreSlider, CoreBox, gpu.CoreMin, gpu.CoreMax, draft.Core);
                 string top = gpu.BoostClock > 0
@@ -165,8 +171,13 @@ namespace NotOnlyFans.Pages
             }
 
             bool memory = gpu.MemoryMax > gpu.MemoryMin;
-            MemoryCard.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
-            if (memory)
+            Unavailable.SetCard(MemoryCard, memory ? null : "This card or its driver doesn't allow a memory clock offset.", MemorySlider, MemoryBox);
+            if (!memory)
+            {
+                SetRange(MemorySlider, MemoryBox, 0, 0, 0);
+                MemoryHint.Text = "Not adjustable on this card";
+            }
+            else
             {
                 SetRange(MemorySlider, MemoryBox, gpu.MemoryMin, gpu.MemoryMax, draft.Memory);
                 string top = gpu.MemoryClock > 0
@@ -176,8 +187,13 @@ namespace NotOnlyFans.Pages
             }
 
             bool power = gpu.PowerMax > gpu.PowerMin;
-            PowerSection.Visibility = PowerCard.Visibility = power ? Visibility.Visible : Visibility.Collapsed;
-            if (power)
+            Unavailable.SetCard(PowerCard, power ? null : "This card or its driver doesn't allow changing the power limit.", PowerSlider, PowerBox);
+            if (!power)
+            {
+                SetRange(PowerSlider, PowerBox, gpu.PowerLimit, gpu.PowerLimit, gpu.PowerLimit);
+                PowerHint.Text = gpu.PowerLimit > 0 ? "Set by the card" : "Not adjustable on this card";
+            }
+            else
             {
                 SetRange(PowerSlider, PowerBox, Math.Ceiling(gpu.PowerMin), Math.Floor(gpu.PowerMax), draft.Power);
                 string share = gpu.PowerDefault > 0

@@ -87,6 +87,38 @@ namespace NotOnlyFans
             App.Sensors.ValuesChanged += UpdatePinValues;
             Theme.Follow(this, RebuildPins);   // rows are made in code: new colors
             RebuildPins();
+
+            App.Sensors.CatalogChanged += ShowAvailability;
+            App.Sensors.ColorsChanged += ShowAvailability;
+            App.Sensors.OcChanged += ShowAvailability;
+            ShowAvailability();
+        }
+
+        /// <summary>
+        /// Pages this PC has nothing for look greyed and say why on hover; they still open (and explain more there).
+        /// Only once the service has told what it found: without the service every page says so itself.
+        /// </summary>
+        private void ShowAvailability()
+        {
+            string? cooling = null;
+            if (App.Sensors.Catalog is { } catalog)
+            {
+                var fans = FanCatalog.All(catalog);
+                cooling = fans.Count == 0 ? "No fans were found on this PC."
+                    : fans.All(f => f.ControlKey is null) ? "None of the fans on this PC can be controlled from Windows. Cooling shows their speeds only."
+                    : null;
+            }
+            Unavailable.Mark(CoolingItem, cooling);
+
+            Unavailable.Mark(ColorsItem, App.Sensors.Colors is { Lights.Count: 0 }
+                ? "No RGB lights NotOnlyFans can drive were found. Supported so far: MSI Mystic Light motherboards and Gigabyte RGB Fusion 1 graphics cards."
+                : null);
+
+            string? oc = App.Sensors.Oc is not { } state ? null
+                : state.Gpus.Count == 0 ? "No graphics card NotOnlyFans can overclock was found."
+                : state.Gpus.All(g => g.Unsupported is not null) ? state.Gpus[0].Unsupported
+                : null;
+            Unavailable.Mark(OcItem, oc, "Graphics card overclocking");
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

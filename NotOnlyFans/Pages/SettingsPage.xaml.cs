@@ -6,6 +6,7 @@ using NotOnlyFans.Contracts;
 using NotOnlyFans.Controls;
 using NotOnlyFans.Services;
 using Windows.ApplicationModel;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace NotOnlyFans.Pages
 {
@@ -235,6 +236,29 @@ namespace NotOnlyFans.Pages
         private void OverlayMove_Click(object sender, RoutedEventArgs e) => App.Overlay.SetMoving(!App.Overlay.IsMoving);
 
         private void OverlayReset_Click(object sender, RoutedEventArgs e) => App.Overlay.ResetPosition();
+
+        // ----- Help -----
+
+        private async void Diagnostics_Click(object sender, RoutedEventArgs e)
+        {
+            DiagnosticsButton.IsEnabled = false;
+            try
+            {
+                var package = new DataPackage();
+                package.SetText(await Diagnostics.BuildAsync());
+                Clipboard.SetContent(package);
+                Clipboard.Flush();   // stays on the clipboard after the app closes
+                DiagnosticsButton.Content = "Copied";
+            }
+            catch (Exception ex)
+            {
+                App.LogError(ex);
+                DiagnosticsButton.Content = "Couldn't copy";
+            }
+            DiagnosticsButton.IsEnabled = true;
+            await Task.Delay(2500);
+            DiagnosticsButton.Content = "Copy diagnostics";
+        }
 
         private async void SafetyReset_Click(object sender, RoutedEventArgs e) => await SetSafety(SafetyRule.Default);
 

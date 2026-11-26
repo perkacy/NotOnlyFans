@@ -221,15 +221,15 @@
                         <!-- Segmented choice of mode. -->
                         <Border Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" CornerRadius="6" Padding="2" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
                             <StackPanel x:Name="ModeButtons" Orientation="Horizontal" Spacing="2">
-                                <Button x:Name="ModeCurve" Content="Curve" Tag="Curve" MinWidth="72" Click="Mode_Click"
-                                        ToolTipService.ToolTip="Speed follows one temperature" />
-                                <Button x:Name="ModeFixed" Content="Fixed" Tag="Fixed" MinWidth="72" Click="Mode_Click"
-                                        ToolTipService.ToolTip="Same speed all the time" />
-                                <Button x:Name="ModeMix" Content="Mix" Tag="Mix" MinWidth="72" Click="Mode_Click"
-                                        ToolTipService.ToolTip="Several curves with different temperatures, e.g. CPU and GPU" />
-                                <Button x:Name="ModeOffset" Content="Offset" Tag="Offset" MinWidth="72" Click="Mode_Click"
-                                        ToolTipService.ToolTip="Follows another fan, plus or minus a few percent" />
-                                <Button x:Name="ModeBios" Content="BIOS" Tag="Bios" MinWidth="72" Click="Mode_Click" />
+                                <Border Background="Transparent"><Button x:Name="ModeCurve" Content="Curve" Tag="Curve" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Speed follows one temperature" /></Border>
+                                <Border Background="Transparent"><Button x:Name="ModeFixed" Content="Fixed" Tag="Fixed" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Same speed all the time" /></Border>
+                                <Border Background="Transparent"><Button x:Name="ModeMix" Content="Mix" Tag="Mix" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Several curves with different temperatures, e.g. CPU and GPU" /></Border>
+                                <Border Background="Transparent"><Button x:Name="ModeOffset" Content="Offset" Tag="Offset" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Follows another fan, plus or minus a few percent" /></Border>
+                                <Border Background="Transparent"><Button x:Name="ModeBios" Content="BIOS" Tag="Bios" MinWidth="72" Click="Mode_Click" /></Border>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -513,7 +513,7 @@
                                 <TextBlock x:Name="CalibrationText" Style="{StaticResource Sub}" />
                                 <TextBlock x:Name="CalibrationLast" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed" />
                             </StackPanel>
-                            <Button x:Name="CalibrateButton" Grid.Column="1" Content="Calibrate" MinWidth="96" VerticalAlignment="Center" Click="Calibrate_Click" />
+                            <Border Grid.Column="1" Background="Transparent" VerticalAlignment="Center"><Button x:Name="CalibrateButton" Content="Calibrate" MinWidth="96" Click="Calibrate_Click" /></Border>
                             <ProgressBar x:Name="CalibrationBar" Grid.Row="1" Grid.ColumnSpan="2" Maximum="100" Visibility="Collapsed"
                                          AutomationProperties.Name="Calibration progress" />
                         </Grid>
