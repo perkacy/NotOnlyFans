@@ -48,8 +48,8 @@
                      Title="Sensor service isn't running"
                      Message="Overclocking is done by the NotOnlyFans background service. Start it in Services, or install it with tools\Install-Service.ps1." />
             <InfoBar x:Name="NoCardInfo" Severity="Informational" IsClosable="False" IsOpen="False"
-                     Title="Not supported yet"
-                     Message="NotOnlyFans can overclock NVIDIA graphics cards so far. AMD and Intel cards will come later." />
+                     Title="No graphics card to overclock"
+                     Message="No graphics card NotOnlyFans can overclock was found." />
             <InfoBar x:Name="UnsupportedInfo" Severity="Informational" IsClosable="False" IsOpen="False" Title="Not supported yet" />
             <InfoBar x:Name="NoticeInfo" Severity="Warning" IsClosable="False" IsOpen="False" Title="Overclock not applied" />
             <InfoBar x:Name="ErrorInfo" Severity="Error" IsClosable="True" IsOpen="False" Title="Couldn't change the graphics card" />
@@ -151,7 +151,7 @@
                                 IsThumbToolTipEnabled="False" AutomationProperties.Name="Power limit" ValueChanged="Slider_ValueChanged" />
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <controls:Stepper x:Name="PowerBox" SmallChange="1" LargeChange="10" AutomationProperties.Name="Power limit in watts" />
-                            <TextBlock Text="W" VerticalAlignment="Center" Width="32" />
+                            <TextBlock x:Name="PowerUnitText" Text="W" VerticalAlignment="Center" Width="32" />
                         </StackPanel>
                     </Grid>
                 </Border>

@@ -24,7 +24,8 @@ internal sealed class OcController(ILogger log)
     /// <summary>At boot the driver may not be ready yet: startup apply is retried this long.</summary>
     private static readonly TimeSpan StartupRetries = TimeSpan.FromMinutes(2);
 
-    private readonly Dictionary<string, NvidiaCard> _cards = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IOcCard> _cards = new(StringComparer.Ordinal);
+    private readonly List<OcGpu> _blocked = [];   // a maker's library that crashed the service before: shown, not used
     private readonly HashSet<string> _startupPending = new(StringComparer.Ordinal);
     private readonly HashSet<string> _appliedNow = new(StringComparer.Ordinal);   // applied by this run: watched for resets
     private DateTime _started;
@@ -39,21 +40,13 @@ internal sealed class OcController(ILogger log)
     {
         _started = now;
         State.Settings = Load();
-        try
-        {
-            foreach (var card in NvidiaCard.Find())
-            {
-                _cards[card.Key] = card;
-            }
-        }
-        catch (Exception ex)
-        {
-            log.LogWarning(ex, "Looking for graphics cards to overclock failed.");
-        }
+        Find("NVIDIA", null, NvidiaCard.Find);
+        Find("AMD", AmdCard.Library, AmdCard.Find);
+        Find("Intel", IntelCard.Library, () => IntelCard.Find());
         Refresh();
-        log.LogInformation("Overclocking: {Cards}.", State.Gpus.Count == 0 ? "no NVIDIA card"
+        log.LogInformation("Overclocking: {Cards}.", State.Gpus.Count == 0 ? "no graphics card"
             : string.Join(", ", State.Gpus.Select(g => g.Unsupported is null
-                ? $"{g.Name} (core {g.CoreMin:+0;-0;0}…{g.CoreMax:+0;-0;0} MHz, memory {g.MemoryMin:+0;-0;0}…{g.MemoryMax:+0;-0;0} MHz, power {g.PowerMin:0}–{g.PowerMax:0} W)"
+                ? $"{g.Name} (core {g.CoreMin:+0;-0;0}…{g.CoreMax:+0;-0;0} MHz, memory {g.MemoryMin:+0;-0;0}…{g.MemoryMax:+0;-0;0} MHz, power {g.PowerMin:0}–{g.PowerMax:0} {g.PowerUnit})"
                 : $"{g.Name} (not supported)")));
 
         foreach (var (key, setting) in State.Settings)
@@ -74,6 +67,46 @@ internal sealed class OcController(ILogger log)
             }
         }
         ApplyStartup(now);
+    }
+
+    /// <summary>
+    /// One maker's cards. AMD's and Intel's libraries are first used under <see cref="NativeGuard"/>: when one
+    /// crashed the service before, it is left alone and the app says why.
+    /// </summary>
+    private void Find<T>(string maker, string? library, Func<List<T>> find) where T : IOcCard
+    {
+        if (library is not null && NativeGuard.Crashed(library))
+        {
+            _blocked.Add(new OcGpu
+            {
+                Key = library,
+                Name = $"{maker} graphics card",
+                Unsupported = $"NotOnlyFans stopped while it was talking to the {maker} graphics driver, so it doesn't use it any more. " +
+                              "It tries again after you install NotOnlyFans again (or a newer version). Copy diagnostics in Settings and report it, please.",
+            });
+            log.LogWarning("{Maker} overclocking is off: the service stopped inside the driver library before.", maker);
+            return;
+        }
+        try
+        {
+            var cards = library is null ? find() : NativeGuard.Run(library, () =>
+            {
+                var found = find();
+                foreach (var card in found)
+                {
+                    card.Read();   // the first read is guarded too
+                }
+                return found;
+            });
+            foreach (var card in cards)
+            {
+                _cards[card.Key] = card;
+            }
+        }
+        catch (Exception ex)
+        {
+            log.LogWarning(ex, "Looking for {Maker} graphics cards to overclock failed.", maker);
+        }
     }
 
     /// <summary>About once a second: startup retries, and every few seconds a check that the card still runs what was applied.</summary>
@@ -132,7 +165,7 @@ internal sealed class OcController(ILogger log)
             _appliedNow.Add(key);
             Save();
             log.LogInformation("Overclock applied to {Card}: core {Core:+0;-0;0} MHz, memory {Memory:+0;-0;0} MHz, power {Power}.",
-                key, setting.CoreOffset, setting.MemoryOffset, setting.PowerLimit is { } p ? $"{p:0} W" : "default");
+                key, setting.CoreOffset, setting.MemoryOffset, setting.PowerLimit is { } p ? $"{p:0} {State.Gpus.FirstOrDefault(g => g.Key == key)?.PowerUnit}" : "default");
         }
         Changed();
         return error;
@@ -221,6 +254,7 @@ internal sealed class OcController(ILogger log)
                 gpus.Add(new OcGpu { Key = card.Key, Name = card.Name, Unsupported = "The graphics driver didn't answer." });
             }
         }
+        gpus.AddRange(_blocked);
         State.Gpus = gpus;
     }
 
@@ -232,7 +266,7 @@ internal sealed class OcController(ILogger log)
 
     /// <summary>
     /// A crash of Windows or of the graphics driver since <paramref name="since"/>, in words, or null.
-    /// Read from the System event log: unexpected restarts, blue screens, driver timeouts and NVIDIA driver errors.
+    /// Read from the System event log: unexpected restarts, blue screens, driver timeouts and NVIDIA or AMD driver errors.
     /// </summary>
     private string? CrashSince(DateTimeOffset? since)
     {
@@ -247,7 +281,7 @@ internal sealed class OcController(ILogger log)
             "(Provider[@Name='EventLog'] and EventID=6008) or " +
             "(Provider[@Name='Microsoft-Windows-WER-SystemErrorReporting'] and EventID=1001) or " +
             "(Provider[@Name='Display'] and EventID=4101) or " +
-            "(Provider[@Name='nvlddmkm'] and (Level=1 or Level=2)))]]";
+            "((Provider[@Name='nvlddmkm'] or Provider[@Name='amdkmdag']) and (Level=1 or Level=2)))]]";
         try
         {
             using var reader = new EventLogReader(new EventLogQuery("System", PathType.LogName, query) { ReverseDirection = true });
@@ -261,6 +295,7 @@ internal sealed class OcController(ILogger log)
             {
                 "Display" => $"the graphics driver stopped responding and recovered ({when})",
                 "nvlddmkm" => $"the NVIDIA driver reported an error ({when})",
+                "amdkmdag" => $"the AMD driver reported an error ({when})",
                 "Microsoft-Windows-WER-SystemErrorReporting" => $"Windows stopped with an error ({when})",
                 _ => $"Windows restarted without shutting down properly ({when})",
             };

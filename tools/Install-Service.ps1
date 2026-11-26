@@ -87,6 +87,8 @@ try {
     Copy-Item (Join-Path $staging '*') $target -Recurse -Force
     if (-not $From) { Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host "Installed files in $target"
+    # A graphics driver library that once stopped the service is skipped until the next install (Overclock\NativeGuard.cs): try again.
+    Remove-Item (Join-Path $env:ProgramData 'NotOnlyFans\*.crashed') -Force -ErrorAction SilentlyContinue
 
     # 4. Register (first time) or update the service.
     if (-not $service) {

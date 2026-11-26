@@ -205,11 +205,11 @@ internal static partial class Diagnostics
                 sb.AppendLine("    unsupported: " + gpu.Unsupported);
                 continue;
             }
-            sb.AppendLine(Inv, $"    core {gpu.CoreMin}…{gpu.CoreMax} MHz, memory {gpu.MemoryMin}…{gpu.MemoryMax} MHz, power {gpu.PowerMin:0}…{gpu.PowerMax:0} W (default {gpu.PowerDefault:0})");
-            sb.AppendLine(Inv, $"    now: core {gpu.CoreOffset:+0;-0;0}, memory {gpu.MemoryOffset:+0;-0;0}, power {gpu.PowerLimit:0} W; boost {gpu.BoostClock} MHz, memory {gpu.MemoryClock} MHz");
+            sb.AppendLine(Inv, $"    core {gpu.CoreMin}…{gpu.CoreMax} MHz, memory {gpu.MemoryMin}…{gpu.MemoryMax} MHz, power {gpu.PowerMin:0}…{gpu.PowerMax:0} {gpu.PowerUnit} (default {gpu.PowerDefault:0})");
+            sb.AppendLine(Inv, $"    now: core {gpu.CoreOffset:+0;-0;0}, memory {gpu.MemoryOffset:+0;-0;0}, power {gpu.PowerLimit:0} {gpu.PowerUnit}; boost {gpu.BoostClock} MHz, memory {gpu.MemoryClock} MHz");
             if (oc.Settings.TryGetValue(gpu.Key, out var saved))
             {
-                sb.AppendLine(Inv, $"    saved: core {saved.CoreOffset:+0;-0;0}, memory {saved.MemoryOffset:+0;-0;0}, power {(saved.PowerLimit is { } p ? p.ToString("0", Inv) + " W" : "default")}, at startup {(saved.ApplyAtStartup ? "yes" : "no")}");
+                sb.AppendLine(Inv, $"    saved: core {saved.CoreOffset:+0;-0;0}, memory {saved.MemoryOffset:+0;-0;0}, power {(saved.PowerLimit is { } p ? p.ToString("0", Inv) + " " + gpu.PowerUnit : "default")}, at startup {(saved.ApplyAtStartup ? "yes" : "no")}");
             }
             if (oc.Notices.TryGetValue(gpu.Key, out var notice))
             {

@@ -3,7 +3,8 @@ namespace NotOnlyFans.Contracts;
 /// <summary>
 /// Graphics card overclocking (the OC tab). The service finds the cards it can tune, publishes them on the
 /// sensor pipe as an "oc" message, and takes changes on the control pipe. A card the user never applied
-/// anything to is not touched. Clocks are offsets on top of the card's own boost, as in MSI Afterburner / LACT.
+/// anything to is not touched. Clocks are offsets on top of the card's own boost, as in MSI Afterburner / LACT
+/// (AMD: offsets from the default maximum clocks). NVIDIA through NVAPI/NVML, AMD through ADLX, Intel through IGCL.
 /// </summary>
 public static class OcPipe
 {
@@ -37,6 +38,9 @@ public sealed class OcSetting
     /// <summary>When it was last applied (the startup check looks for crashes after this). Set by the service.</summary>
     public DateTimeOffset? AppliedAt { get; set; }
 
+    /// <summary>The user accepted the risk the card's maker asks about (<see cref="OcGpu.NeedsConsent"/>).</summary>
+    public bool RiskAccepted { get; set; }
+
     public OcSetting Copy() => new()
     {
         CoreOffset = CoreOffset,
@@ -44,6 +48,7 @@ public sealed class OcSetting
         PowerLimit = PowerLimit,
         ApplyAtStartup = ApplyAtStartup,
         AppliedAt = AppliedAt,
+        RiskAccepted = RiskAccepted,
     };
 }
 
@@ -63,7 +68,7 @@ public sealed class OcGpu
     public int MemoryMin { get; set; }
     public int MemoryMax { get; set; }
 
-    /// <summary>Power limit range and default, W; 0 = can't be changed.</summary>
+    /// <summary>Power limit range and default in <see cref="PowerUnit"/>; min = max = can't be changed.</summary>
     public float PowerMin { get; set; }
     public float PowerMax { get; set; }
     public float PowerDefault { get; set; }
@@ -76,6 +81,26 @@ public sealed class OcGpu
     /// <summary>Highest boost clock and memory clock at the current offsets, MHz (0 = unknown).</summary>
     public int BoostClock { get; set; }
     public int MemoryClock { get; set; }
+
+    /// <summary>"W" (watts), or "%" (AMD: offset from the default, Intel Battlemage: share of the default).</summary>
+    public string PowerUnit { get; set; } = OcUnits.Watts;
+
+    /// <summary>Why the core clock, memory clock or power limit can't be changed on this card (null: no reason given).</summary>
+    public string? CoreNote { get; set; }
+    public string? MemoryNote { get; set; }
+    public string? PowerNote { get; set; }
+
+    /// <summary>
+    /// The card's maker asks apps to get the user's explicit OK to the risk before overclocking (Intel's warranty
+    /// waiver); the app asks once and sends <see cref="OcSetting.RiskAccepted"/>.
+    /// </summary>
+    public bool NeedsConsent { get; set; }
+}
+
+public static class OcUnits
+{
+    public const string Watts = "W";
+    public const string Percent = "%";
 }
 
 public sealed class OcState

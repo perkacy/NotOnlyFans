@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using NotOnlyFans.Contracts;
@@ -101,7 +102,7 @@ namespace NotOnlyFans.Pages
             NoCardInfo.IsOpen = App.Sensors.IsConnected && gpus.Count == 0;
             NoCardInfo.Message = State is null
                 ? "The background service is older than this app and can't overclock yet. Update it with tools\\Install.ps1."
-                : "NotOnlyFans can overclock NVIDIA graphics cards so far. AMD and Intel cards will come later.";
+                : "NotOnlyFans can overclock NVIDIA GeForce cards, AMD Radeon RX 6000 cards and newer, and Intel Arc cards. Graphics built into the processor are left out.";
 
             // Card picker (only with more than one card).
             string cards = string.Join('|', gpus.Select(g => g.Key + "=" + g.Name));
@@ -126,7 +127,10 @@ namespace NotOnlyFans.Pages
             _settingControls = false;
 
             var gpu = Gpu;
-            Subtitle.Text = gpu is null ? "Graphics card overclocking" : $"Graphics card overclocking · {gpu.Name}";
+            // AMD and Intel support is new and not tested on real cards yet: said where it matters.
+            bool experimental = gpu is not null && !gpu.Key.StartsWith("nvidia/", StringComparison.Ordinal);
+            Subtitle.Text = gpu is null ? "Graphics card overclocking"
+                : $"Graphics card overclocking · {gpu.Name}{(experimental ? " · experimental" : "")}";
             bool usable = gpu is not null && gpu.Unsupported is null && !App.Sensors.IsServiceMissing;
             UnsupportedInfo.IsOpen = gpu?.Unsupported is not null;
             UnsupportedInfo.Message = gpu?.Unsupported ?? "";
@@ -155,7 +159,7 @@ namespace NotOnlyFans.Pages
 
             bool core = gpu.CoreMax > gpu.CoreMin;
             // What the card or its driver doesn't allow stays greyed, with the reason on hover.
-            Unavailable.SetCard(CoreCard, core ? null : "This card or its driver doesn't allow a core clock offset.", CoreSlider, CoreBox);
+            Unavailable.SetCard(CoreCard, core ? null : gpu.CoreNote ?? "This card or its driver doesn't allow a core clock offset.", CoreSlider, CoreBox);
             if (!core)
             {
                 SetRange(CoreSlider, CoreBox, 0, 0, 0);
@@ -171,7 +175,7 @@ namespace NotOnlyFans.Pages
             }
 
             bool memory = gpu.MemoryMax > gpu.MemoryMin;
-            Unavailable.SetCard(MemoryCard, memory ? null : "This card or its driver doesn't allow a memory clock offset.", MemorySlider, MemoryBox);
+            Unavailable.SetCard(MemoryCard, memory ? null : gpu.MemoryNote ?? "This card or its driver doesn't allow a memory clock offset.", MemorySlider, MemoryBox);
             if (!memory)
             {
                 SetRange(MemorySlider, MemoryBox, 0, 0, 0);
@@ -187,7 +191,10 @@ namespace NotOnlyFans.Pages
             }
 
             bool power = gpu.PowerMax > gpu.PowerMin;
-            Unavailable.SetCard(PowerCard, power ? null : "This card or its driver doesn't allow changing the power limit.", PowerSlider, PowerBox);
+            Unavailable.SetCard(PowerCard, power ? null : gpu.PowerNote ?? "This card or its driver doesn't allow changing the power limit.", PowerSlider, PowerBox);
+            bool percent = gpu.PowerUnit == OcUnits.Percent;
+            PowerUnitText.Text = gpu.PowerUnit;
+            AutomationProperties.SetName(PowerBox, percent ? "Power limit in percent" : "Power limit in watts");
             if (!power)
             {
                 SetRange(PowerSlider, PowerBox, gpu.PowerLimit, gpu.PowerLimit, gpu.PowerLimit);
@@ -196,10 +203,12 @@ namespace NotOnlyFans.Pages
             else
             {
                 SetRange(PowerSlider, PowerBox, Math.Ceiling(gpu.PowerMin), Math.Floor(gpu.PowerMax), draft.Power);
-                string share = gpu.PowerDefault > 0
-                    ? string.Create(c, $"{draft.Power / gpu.PowerDefault * 100:0}% of the default {gpu.PowerDefault:0} W")
+                // Watts (NVIDIA, Intel Arc A) or % (AMD: from the default, Intel Arc B: of the default).
+                string share = percent ? string.Create(c, $"Default {gpu.PowerDefault:0}%")
+                    : gpu.PowerDefault > 0 ? string.Create(c, $"{draft.Power / gpu.PowerDefault * 100:0}% of the default {gpu.PowerDefault:0} W")
                     : "";
-                PowerHint.Text = Math.Abs(draft.Power - running.Power) >= 1 ? string.Create(c, $"{share} · now {running.Power:0} W") : share;
+                string now = string.Create(c, $"now {running.Power:0}{(percent ? "%" : " W")}");
+                PowerHint.Text = Math.Abs(draft.Power - running.Power) >= 1 ? $"{share} · {now}" : share;
             }
 
             bool pending = Pending(gpu);
@@ -255,7 +264,9 @@ namespace NotOnlyFans.Pages
             MemoryLoadNow.Text = Read("Load", "GPU Memory Controller") is { } ml ? string.Create(c, $"Controller {ml:0}%") : "";
             float? watts = Read("Power", "GPU Package");
             PowerNow.Text = watts is { } w ? string.Create(c, $"{w:0} W") : SensorFormat.NoValue;
-            PowerOfLimit.Text = gpu.PowerLimit > 0 ? string.Create(c, $"Limit {gpu.PowerLimit:0} W") : "";
+            PowerOfLimit.Text = gpu.PowerUnit == OcUnits.Percent
+                ? gpu.PowerMax > gpu.PowerMin ? string.Create(c, $"Limit {gpu.PowerLimit:0}%") : ""
+                : gpu.PowerLimit > 0 ? string.Create(c, $"Limit {gpu.PowerLimit:0} W") : "";
             TemperatureNow.Text = SensorFormat.Format("Temperature", Read("Temperature", "GPU Core"));
             HotSpotNow.Text = Read("Temperature", "GPU Hot Spot") is { } hot ? string.Create(c, $"Hot spot {hot:0} °C") : "";
         }
@@ -264,14 +275,19 @@ namespace NotOnlyFans.Pages
             value is { } v ? string.Create(CultureInfo.CurrentCulture, $"{v:0} MHz") : SensorFormat.NoValue;
 
         /// <summary>
-        /// The card's sensors: LibreHardwareMonitor numbers NVIDIA cards (/gpu-nvidia/0, 1…) in the driver's order,
-        /// the same order the service lists them in.
+        /// The card's sensors: LibreHardwareMonitor numbers each maker's cards (/gpu-nvidia/0, /gpu-amd/0…) in the
+        /// driver's order, the order the service lists them in too (with one card of a maker, the usual case, it is simply 0).
         /// </summary>
         private static string? HardwareId(OcGpu gpu)
         {
-            var nvidia = State?.Gpus.Where(g => g.Key.StartsWith("nvidia/", StringComparison.Ordinal)).ToList() ?? [];
-            int index = nvidia.FindIndex(g => g.Key == gpu.Key);
-            return index < 0 ? null : $"/gpu-nvidia/{index}";
+            string maker = gpu.Key.Split('/')[0];
+            if (maker is not ("nvidia" or "amd" or "intel"))
+            {
+                return null;
+            }
+            var same = State?.Gpus.Where(g => g.Key.StartsWith(maker + "/", StringComparison.Ordinal)).ToList() ?? [];
+            int index = same.FindIndex(g => g.Key == gpu.Key);
+            return index < 0 ? null : $"/gpu-{maker}/{index}";
         }
 
         // ----- Editing -----
@@ -331,15 +347,45 @@ namespace NotOnlyFans.Pages
                 return;
             }
             var draft = Current(gpu);
+            var saved = State?.Settings.GetValueOrDefault(gpu.Key);
             var setting = new OcSetting
             {
                 CoreOffset = draft.Core,
                 MemoryOffset = draft.Memory,
                 // The card's default stays "default" (it follows the driver if that changes).
                 PowerLimit = gpu.PowerMax > gpu.PowerMin && Math.Abs(draft.Power - gpu.PowerDefault) >= 1 ? draft.Power : null,
-                ApplyAtStartup = State?.Settings.GetValueOrDefault(gpu.Key)?.ApplyAtStartup == true,
+                ApplyAtStartup = saved?.ApplyAtStartup == true,
+                RiskAccepted = saved?.RiskAccepted == true,
             };
+            if (gpu.NeedsConsent && !setting.RiskAccepted)
+            {
+                // The card's maker (Intel) asks apps to get the user's OK once; it is kept with the setting.
+                if (!await AcceptRisk(gpu))
+                {
+                    return;
+                }
+                setting.RiskAccepted = true;
+            }
             await Run(() => App.Control.ApplyOcAsync(gpu.Key, setting));
+        }
+
+        private async Task<bool> AcceptRisk(OcGpu gpu)
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = "Overclock this card?",
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    Text = $"Higher clocks and power put more electrical and thermal stress on the {gpu.Name}, which can shorten its life, " +
+                           "and the card's maker may not cover damage from overclocking. The maker asks apps to get your OK before overclocking.",
+                },
+                PrimaryButtonText = "I accept the risk",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            return await dialog.ShowAsync() == ContentDialogResult.Primary;
         }
 
         private async void Reset_Click(object sender, RoutedEventArgs e)

@@ -9,7 +9,7 @@ namespace NotOnlyFans.Service.Overclock;
 /// NVML (nvml.dll, part of the driver, as LACT and nvidia-smi use it). Ranges always come from the driver,
 /// so a value the card can't take is never sent. Needs administrator rights (the service runs as Local System).
 /// </summary>
-internal sealed class NvidiaCard
+internal sealed class NvidiaCard : IOcCard
 {
     private const int GraphicsDomain = 0;
     private const int MemoryDomain = 4;

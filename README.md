@@ -18,7 +18,13 @@ NotOnlyFans is two parts: a small **background service** that reads every sensor
 - **Sensors**: every sensor LibreHardwareMonitor sees, grouped by device. Click a row for its last 5 minutes; hide what you don't need, rename, pin.
 - **Pinned**: chosen readings always in the sidebar and in the tray icon's tooltip.
 - **Colors**: motherboard and graphics-card RGB, static or effects, or a color that follows a temperature. Supported now: MSI Mystic Light boards (USB HID) and Gigabyte RGB Fusion 1 graphics cards.
-- **OC**: NVIDIA core and memory clock offsets and the power limit, optionally applied when Windows starts — but never after a crash of Windows or the graphics driver.
+- **OC**: graphics card core and memory clock offsets and the power limit, optionally applied when Windows starts — but never after a crash of Windows or the graphics driver.
+  - NVIDIA GeForce (NVAPI and NVML).
+  - AMD Radeon RX 6000 and newer (ADLX): highest GPU and memory clock as offsets from the default, power limit in %. *Experimental: not tested on an AMD card yet.*
+  - Intel Arc (IGCL): GPU clock offset and power limit; asks you once to accept the risk, as Intel requires. *Experimental: not tested on an Arc card yet.*
+  - If a maker's driver library ever stops the service, NotOnlyFans stops using it (the OC tab says so) until it is installed again.
+- **Diagnostics**: Settings › Copy diagnostics puts a report for bug reports on the clipboard (hardware, sensors, settings, recent errors; no user or computer names).
+- Features this PC can't use stay visible but greyed, with the reason on hover.
 - **Game overlay**: your pinned readings over games in borderless or windowed mode. Clicks go through it; nothing is injected into the game. `Ctrl+Shift+O` shows or hides it, `Ctrl+Shift+M` moves it.
 - Tray icon, start with Windows, light and dark theme, Back / Forward with the mouse side buttons.
 
@@ -81,7 +87,7 @@ The first run makes a self-signed code-signing certificate in your user certific
 
 | Project | What it is |
 |---|---|
-| `NotOnlyFans.Service` | Windows service (.NET worker, Local System). Reads sensors with [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) once a second, runs fan curves and the safety rule, drives RGB (own drivers) and NVIDIA overclocking (NVAPI). Settings in `%ProgramData%\NotOnlyFans`. |
+| `NotOnlyFans.Service` | Windows service (.NET worker, Local System). Reads sensors with [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) once a second, runs fan curves and the safety rule, drives RGB (own drivers) and graphics card overclocking (NVIDIA NVAPI/NVML, AMD ADLX, Intel IGCL — the libraries that come with each driver). Settings in `%ProgramData%\NotOnlyFans`. |
 | `NotOnlyFans` | WinUI 3 app (Windows App SDK), packaged as MSIX. Only shows and sends changes; it holds no hardware access. |
 | `NotOnlyFans.Contracts` | The messages both sides share (JSON, source-generated). |
 
