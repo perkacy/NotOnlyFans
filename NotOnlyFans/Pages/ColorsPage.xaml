@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="NotOnlyFans.Pages.ColorsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:NotOnlyFans.Controls"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- Light cards: card-colored buttons, like the fan tiles on Home. -->
+                <ResourceDictionary x:Key="Default">
+                    <StaticResource x:Key="ButtonBackground" ResourceKey="CardBackgroundFillColorDefaultBrush" />
+                    <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
+                    <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
+                    <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="TextFillColorPrimaryBrush" />
+                    <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TextFillColorPrimaryBrush" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <StaticResource x:Key="ButtonBackground" ResourceKey="CardBackgroundFillColorDefaultBrush" />
+                    <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
+                    <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
+                    <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="TextFillColorPrimaryBrush" />
+                    <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TextFillColorPrimaryBrush" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="20,12" />
+            </Style>
+            <Style x:Key="Sub" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+            <Style x:Key="Segments" TargetType="Border">
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Padding" Value="2" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <StackPanel Padding="28,12,40,40" Spacing="4" MaxWidth="1200" HorizontalAlignment="Stretch">
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Colors" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock Text="Lighting for fans and the graphics card" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Bottom">
+                    <TextBlock Text="Sync all" VerticalAlignment="Center" />
+                    <ToggleSwitch x:Name="SyncSwitch" OnContent="" OffContent="" MinWidth="0" Margin="0,0,-12,0"
+                                  AutomationProperties.Name="Sync all lights" Toggled="SyncSwitch_Toggled" />
+                </StackPanel>
+            </Grid>
+
+            <InfoBar x:Name="ServiceInfo" Severity="Warning" IsClosable="False" IsOpen="False"
+                     Title="Sensor service isn't running"
+                     Message="Lights are driven by the NotOnlyFans background service. Start it in Services, or install it with tools\Install-Service.ps1." />
+            <InfoBar x:Name="NoLightsInfo" Severity="Informational" IsClosable="False" IsOpen="False"
+                     Title="No lights found"
+                     Message="NotOnlyFans drives the lights it knows: so far MSI Mystic Light motherboards (PRO Z690-A) and Gigabyte RTX 3060 EAGLE OC graphics cards. More devices will come." />
+            <StackPanel x:Name="WarningBars" Spacing="4" />
+            <InfoBar x:Name="ErrorInfo" Severity="Warning" IsClosable="True" IsOpen="False" Title="Couldn't change the light" />
+
+            <!-- One card per light; built in code from what the service found. -->
+            <Grid x:Name="LightCards" ColumnSpacing="12" RowSpacing="12" />
+
+            <StackPanel x:Name="Editor" Spacing="4" Visibility="Collapsed">
+                <TextBlock x:Name="EditingTitle" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,0" />
+                <TextBlock x:Name="EditingHint" Style="{StaticResource Sub}" Margin="0,0,0,4" />
+
+                <!-- Effect -->
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="24" controls:Responsive.LabelAbove="620">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Effect" VerticalAlignment="Center" />
+                        <Border Grid.Column="1" Style="{StaticResource Segments}">
+                            <StackPanel x:Name="EffectButtons" Orientation="Horizontal" Spacing="2">
+                                <Button Content="Static" Tag="Static" MinWidth="80" Click="Effect_Click" ToolTipService.ToolTip="One color" />
+                                <Button Content="Breathing" Tag="Breathing" MinWidth="80" Click="Effect_Click" ToolTipService.ToolTip="One color, slowly fading in and out" />
+                                <Button Content="Rainbow" Tag="Rainbow" MinWidth="80" Click="Effect_Click" ToolTipService.ToolTip="All colors, moving" />
+                                <Button Content="Temperature" Tag="Temperature" MinWidth="80" Click="Effect_Click" ToolTipService.ToolTip="Color follows a temperature, from a cool color to a hot one" />
+                                <Button Content="Off" Tag="Off" MinWidth="80" Click="Effect_Click" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Color (Static, Breathing) -->
+                <Border x:Name="ColorCard" Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Color" />
+                            <TextBlock x:Name="ColorHex" Style="{StaticResource Sub}" IsTextSelectionEnabled="True" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <StackPanel x:Name="Swatches" Orientation="Horizontal" Spacing="8" />
+                            <Button x:Name="CustomColor" Content="Custom…" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <Button.Flyout>
+                                    <Flyout x:Name="CustomFlyout" Opened="CustomFlyout_Opened">
+                                        <ColorPicker x:Name="Picker" IsAlphaEnabled="False" IsMoreButtonVisible="False"
+                                                     IsColorSliderVisible="True" IsColorChannelTextInputVisible="False"
+                                                     IsHexInputVisible="True" ColorChanged="Picker_ColorChanged" />
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Temperature -->
+                <Border x:Name="TemperatureCard" Style="{StaticResource Card}" Padding="20,14,20,16">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnSpacing="24" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Temperature colors" />
+                                <TextBlock Text="Color follows the temperature, from cool to hot. Click the color at either end to change it." Style="{StaticResource Sub}" />
+                                <controls:LinkButton x:Name="ScaleReset" Content="Use default colors" Padding="0" Margin="0,2,0,0"
+                                                 Click="ScaleReset_Click" Visibility="Collapsed" />
+                            </StackPanel>
+                            <ComboBox x:Name="SourceBox" Grid.Column="1" Header="Source" MinWidth="240" VerticalAlignment="Center"
+                                      SelectionChanged="SourceBox_SelectionChanged" />
+                        </Grid>
+                        <!-- The scale, with its cool and hot colors as buttons at the ends. -->
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="CoolColorButton" Tag="Cool" Click="ScaleColor_Click" Width="32" Height="32" Padding="0"
+                                    CornerRadius="16" ToolTipService.ToolTip="Cool color" AutomationProperties.Name="Cool color">
+                                <Ellipse x:Name="CoolColorDot" Width="22" Height="22" />
+                            </Button>
+                            <Grid Grid.Column="1" Height="20" VerticalAlignment="Center">
+                                <Border x:Name="GradientBar" Height="12" CornerRadius="6" VerticalAlignment="Center" />
+                                <Border x:Name="NowMarker" Width="4" Height="20" CornerRadius="2" HorizontalAlignment="Left"
+                                        Background="{ThemeResource TextFillColorPrimaryBrush}" />
+                            </Grid>
+                            <Button x:Name="HotColorButton" Grid.Column="2" Tag="Hot" Click="ScaleColor_Click" Width="32" Height="32" Padding="0"
+                                    CornerRadius="16" ToolTipService.ToolTip="Hot color" AutomationProperties.Name="Hot color">
+                                <Ellipse x:Name="HotColorDot" Width="22" Height="22" />
+                            </Button>
+                        </Grid>
+                        <Grid ColumnSpacing="12" controls:Responsive.Hide="1:500">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Cool at" Style="{StaticResource Sub}" VerticalAlignment="Center" />
+                                <controls:Stepper x:Name="CoolBox" Minimum="0" Maximum="120" SmallChange="1" LargeChange="5"
+                                                  AutomationProperties.Name="Cool temperature in °C" />
+                                <TextBlock Text="°C" Style="{StaticResource Sub}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock x:Name="NowText" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Hot at" Style="{StaticResource Sub}" VerticalAlignment="Center" />
+                                <controls:Stepper x:Name="HotBox" Minimum="5" Maximum="125" SmallChange="1" LargeChange="5"
+                                                  AutomationProperties.Name="Hot temperature in °C" />
+                                <TextBlock Text="°C" Style="{StaticResource Sub}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Off -->
+                <Border x:Name="OffCard" Style="{StaticResource Card}">
+                    <TextBlock x:Name="OffText" Text="Lighting is off for this light" />
+                </Border>
+
+                <!-- Brightness -->
+                <Border x:Name="BrightnessCard" Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Brightness" VerticalAlignment="Center" />
+                        <Slider x:Name="BrightnessSlider" Grid.Column="1" Width="240" Minimum="0" Maximum="100" StepFrequency="10"
+                                SmallChange="10" LargeChange="10" TickFrequency="10" TickPlacement="None" VerticalAlignment="Center"
+                                AutomationProperties.Name="Brightness" ValueChanged="BrightnessSlider_ValueChanged" />
+                        <TextBlock x:Name="BrightnessText" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Speed (Breathing, Rainbow) -->
+                <Border x:Name="SpeedCard" Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Speed" VerticalAlignment="Center" />
+                        <Border Grid.Column="1" Style="{StaticResource Segments}">
+                            <StackPanel x:Name="SpeedButtons" Orientation="Horizontal" Spacing="2">
+                                <Button Content="Slow" Tag="Slow" MinWidth="80" Click="Speed_Click" />
+                                <Button Content="Medium" Tag="Medium" MinWidth="80" Click="Speed_Click" />
+                                <Button Content="Fast" Tag="Fast" MinWidth="80" Click="Speed_Click" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="NotOnlyFans.Pages.OcPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:NotOnlyFans.Controls"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20,12" />
+        </Style>
+        <Style x:Key="Sub" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="Section" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+            <Setter Property="Margin" Value="0,24,0,4" />
+        </Style>
+        <Style x:Key="TileValue" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <StackPanel Padding="28,12,40,40" Spacing="4" MaxWidth="1200" HorizontalAlignment="Stretch">
+            <Grid Margin="0,0,0,16" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="OC" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock x:Name="Subtitle" Text="Graphics card overclocking" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <!-- Only with more than one card. -->
+                <ComboBox x:Name="CardBox" Grid.Column="1" VerticalAlignment="Bottom" MinWidth="220" Visibility="Collapsed"
+                          AutomationProperties.Name="Graphics card" SelectionChanged="CardBox_SelectionChanged" />
+            </Grid>
+
+            <InfoBar x:Name="ServiceInfo" Severity="Warning" IsClosable="False" IsOpen="False"
+                     Title="Sensor service isn't running"
+                     Message="Overclocking is done by the NotOnlyFans background service. Start it in Services, or install it with tools\Install-Service.ps1." />
+            <InfoBar x:Name="NoCardInfo" Severity="Informational" IsClosable="False" IsOpen="False"
+                     Title="Not supported yet"
+                     Message="NotOnlyFans can overclock NVIDIA graphics cards so far. AMD and Intel cards will come later." />
+            <InfoBar x:Name="UnsupportedInfo" Severity="Informational" IsClosable="False" IsOpen="False" Title="Not supported yet" />
+            <InfoBar x:Name="NoticeInfo" Severity="Warning" IsClosable="False" IsOpen="False" Title="Overclock not applied" />
+            <InfoBar x:Name="ErrorInfo" Severity="Error" IsClosable="True" IsOpen="False" Title="Couldn't change the graphics card" />
+
+            <!-- Live readings -->
+            <Grid x:Name="Tiles" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Card}" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Text="Core clock" Style="{StaticResource Sub}" />
+                        <TextBlock x:Name="CoreNow" Style="{StaticResource TileValue}" Text="—" />
+                        <TextBlock x:Name="LoadNow" Style="{StaticResource Sub}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Text="Memory clock" Style="{StaticResource Sub}" />
+                        <TextBlock x:Name="MemoryNow" Style="{StaticResource TileValue}" Text="—" />
+                        <TextBlock x:Name="MemoryLoadNow" Style="{StaticResource Sub}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Text="Power" Style="{StaticResource Sub}" />
+                        <TextBlock x:Name="PowerNow" Style="{StaticResource TileValue}" Text="—" />
+                        <TextBlock x:Name="PowerOfLimit" Style="{StaticResource Sub}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Style="{StaticResource Card}" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Text="Temperature" Style="{StaticResource Sub}" />
+                        <TextBlock x:Name="TemperatureNow" Style="{StaticResource TileValue}" Text="—" />
+                        <TextBlock x:Name="HotSpotNow" Style="{StaticResource Sub}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <StackPanel x:Name="Editor" Spacing="4">
+                <!-- Clocks -->
+                <TextBlock Text="Clocks" Style="{StaticResource Section}" />
+                <Border x:Name="CoreCard" Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="16" controls:Responsive.LabelAbove="640">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="200" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Core clock offset" />
+                            <TextBlock x:Name="CoreHint" Style="{StaticResource Sub}" />
+                        </StackPanel>
+                        <Slider x:Name="CoreSlider" Grid.Column="1" VerticalAlignment="Center" StepFrequency="5" SmallChange="5" LargeChange="25"
+                                IsThumbToolTipEnabled="False" AutomationProperties.Name="Core clock offset" ValueChanged="Slider_ValueChanged" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <controls:Stepper x:Name="CoreBox" SmallChange="5" LargeChange="25" AutomationProperties.Name="Core clock offset in MHz" />
+                            <TextBlock Text="MHz" VerticalAlignment="Center" Width="32" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border x:Name="MemoryCard" Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="16" controls:Responsive.LabelAbove="640">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="200" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Memory clock offset" />
+                            <TextBlock x:Name="MemoryHint" Style="{StaticResource Sub}" />
+                        </StackPanel>
+                        <Slider x:Name="MemorySlider" Grid.Column="1" VerticalAlignment="Center" StepFrequency="10" SmallChange="10" LargeChange="50"
+                                IsThumbToolTipEnabled="False" AutomationProperties.Name="Memory clock offset" ValueChanged="Slider_ValueChanged" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <controls:Stepper x:Name="MemoryBox" SmallChange="10" LargeChange="50" AutomationProperties.Name="Memory clock offset in MHz" />
+                            <TextBlock Text="MHz" VerticalAlignment="Center" Width="32" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Power -->
+                <TextBlock x:Name="PowerSection" Text="Power" Style="{StaticResource Section}" />
+                <Border x:Name="PowerCard" Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="16" controls:Responsive.LabelAbove="640">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="200" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Power limit" />
+                            <TextBlock x:Name="PowerHint" Style="{StaticResource Sub}" />
+                        </StackPanel>
+                        <Slider x:Name="PowerSlider" Grid.Column="1" VerticalAlignment="Center" StepFrequency="1" SmallChange="1" LargeChange="10"
+                                IsThumbToolTipEnabled="False" AutomationProperties.Name="Power limit" ValueChanged="Slider_ValueChanged" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <controls:Stepper x:Name="PowerBox" SmallChange="1" LargeChange="10" AutomationProperties.Name="Power limit in watts" />
+                            <TextBlock Text="W" VerticalAlignment="Center" Width="32" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Apply / discard / reset -->
+                <Grid Margin="0,16,0,0" ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ApplyButton" Content="Apply" Style="{StaticResource AccentButtonStyle}" MinWidth="96" Click="Apply_Click"
+                            ToolTipService.ToolTip="Send these values to the graphics card" />
+                    <Button x:Name="DiscardButton" Grid.Column="1" Content="Discard changes" Click="Discard_Click"
+                            ToolTipService.ToolTip="Back to what the card runs now" />
+                    <StackPanel x:Name="PendingNote" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="8,0,0,0">
+                        <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorCautionBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Not applied yet" Style="{StaticResource Sub}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button x:Name="ResetButton" Grid.Column="3" Content="Reset to defaults" Click="Reset_Click"
+                            ToolTipService.ToolTip="No offsets and the card's default power limit, now and at startup" />
+                </Grid>
+
+                <!-- Startup -->
+                <TextBlock Text="Startup" Style="{StaticResource Section}" />
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Apply when Windows starts" />
+                            <TextBlock x:Name="StartupHint" Style="{StaticResource Sub}" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="StartupSwitch" Grid.Column="1" OnContent="" OffContent="" MinWidth="0" Margin="0,0,-12,0"
+                                      AutomationProperties.Name="Apply when Windows starts" Toggled="StartupSwitch_Toggled" />
+                    </Grid>
+                </Border>
+                <TextBlock Style="{StaticResource Sub}" Margin="0,12,0,0"
+                           Text="Raise clocks in small steps and test in a game. If the picture freezes or the game crashes, lower them. Fans and the safety temperature work as always." />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "NotOnlyFans (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "NotOnlyFans (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

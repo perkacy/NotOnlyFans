@@ -1,0 +1,530 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="NotOnlyFans.Pages.CoolingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:NotOnlyFans.ViewModels"
+    xmlns:controls="using:NotOnlyFans.Controls"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <ResourceDictionary>
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="20,16" />
+            </Style>
+            <Style x:Key="Caption" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+            </Style>
+            <Style x:Key="Sub" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+            <Style x:Key="StatusValue" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="LineHeight" Value="28" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+            <!-- A whole fan row is one button (opens the fan); subtle until hovered. -->
+            <Style x:Key="RowButton" TargetType="Button">
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="4" />
+            </Style>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <Grid Padding="28,12,40,40" MaxWidth="1200">
+
+            <!-- ===== List of fans ===== -->
+            <StackPanel x:Name="ListPanel" Spacing="12">
+                <StackPanel Spacing="4" Margin="0,0,0,8">
+                    <TextBlock Text="Cooling" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock Text="Choose a fan to set how it runs. Fans controlled by NotOnlyFans keep their settings with the window closed." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <InfoBar x:Name="ListServiceInfo" Severity="Warning" IsClosable="False" IsOpen="False"
+                         Title="Sensor service isn't running"
+                         Message="Fan control lives in the NotOnlyFans background service. Start it in Services, or install it with tools\Install-Service.ps1." />
+                <InfoBar x:Name="ListSafetyInfo" Severity="Error" IsClosable="False" IsOpen="False" Title="Safety: fans at 100%" />
+
+                <Border Style="{StaticResource Card}" Padding="12,8">
+                    <StackPanel>
+                    <ItemsRepeater x:Name="FanList" AutomationProperties.Name="Fans">
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FanRowViewModel">
+                                <Button Style="{StaticResource RowButton}" Tag="{x:Bind}" Click="FanRow_Click" Loaded="FanRow_Loaded" AutomationProperties.Name="{x:Bind Name, Mode=OneWay}">
+                                    <Button.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Text="Renameâ€¦" Tag="{x:Bind}" Click="RenameRow_Click">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8AC;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem Text="{x:Bind PinText, Mode=OneWay}" Tag="{x:Bind}" Click="PinRow_Click">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE718;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutSeparator />
+                                            <MenuFlyoutItem Text="Move up" Tag="{x:Bind}" Click="MoveFanUp_Click">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74A;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem Text="Move down" Tag="{x:Bind}" Click="MoveFanDown_Click">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74B;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutSeparator Visibility="{x:Bind IsRenamed, Mode=OneWay}" />
+                                            <MenuFlyoutItem Text="Use original name" Tag="{x:Bind}" Click="ResetRowName_Click" Visibility="{x:Bind IsRenamed, Mode=OneWay}" />
+                                        </MenuFlyout>
+                                    </Button.ContextFlyout>
+                                    <controls:DragRow ColumnSpacing="20" Padding="8,12" CornerRadius="4" controls:Responsive.Hide="3:600 1:440">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="72" />
+                                            <ColumnDefinition Width="96" />
+                                            <ColumnDefinition Width="140" />
+                                            <ColumnDefinition Width="40" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind Name, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{x:Bind Detail, Mode=OneWay}" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" CornerRadius="4" Padding="0,3" Background="{ThemeResource SubtleFillColorSecondaryBrush}" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind Mode, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Grid.Column="2" Text="{x:Bind Rpm, Mode=OneWay}" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <Grid Grid.Column="3" Height="4" CornerRadius="2" VerticalAlignment="Center" Background="{ThemeResource ControlStrongFillColorDisabledBrush}">
+                                            <Border Width="{x:Bind BarWidth, Mode=OneWay}" HorizontalAlignment="Left" CornerRadius="2" Background="{ThemeResource AccentFillColorDefaultBrush}" />
+                                        </Grid>
+                                        <TextBlock Grid.Column="4" Text="{x:Bind Percent, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <!-- Pin to the sidebar, as on Sensors (the row itself opens the fan). -->
+                                        <Button
+                                            Grid.Column="5"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Tag="{x:Bind}"
+                                            Click="PinRow_Click"
+                                            Width="32" Height="32" Padding="0" Margin="-6,0"
+                                            VerticalAlignment="Center"
+                                            ToolTipService.ToolTip="{x:Bind PinText, Mode=OneWay}"
+                                            AutomationProperties.Name="{x:Bind PinText, Mode=OneWay}">
+                                            <Grid>
+                                                <FontIcon Glyph="&#xE718;" FontSize="14" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="{x:Bind IsUnpinned, Mode=OneWay}" />
+                                                <FontIcon Glyph="&#xE841;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Visibility="{x:Bind IsPinned, Mode=OneWay}" />
+                                            </Grid>
+                                        </Button>
+                                        <FontIcon Grid.Column="6" Glyph="&#xE76C;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </controls:DragRow>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                    <TextBlock Text="Drag a fan to change the order (Home shows the same order)." Style="{StaticResource Caption}" Margin="8,8,0,4" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="ListSafetyNote" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- ===== One fan ===== -->
+            <StackPanel x:Name="FanView" Spacing="4" Visibility="Collapsed">
+                <!--
+                    "Cooling â€º name" as in Windows Settings: the native breadcrumb, so both parts share one text line,
+                    "Cooling" only changes color under the pointer (no box squeezed around it), and a long name in a
+                    narrow window folds into "â€¦". Rename and pin sit right after the name.
+                -->
+                <Grid x:Name="TitleRow" ColumnSpacing="4" SizeChanged="TitleRow_SizeChanged">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <BreadcrumbBar x:Name="FanCrumbs" ItemClicked="FanCrumbs_ItemClicked" FontFamily="Segoe UI Variable Display" VerticalAlignment="Center">
+                        <BreadcrumbBar.Resources>
+                            <ResourceDictionary>
+                                <ResourceDictionary.ThemeDictionaries>
+                                    <ResourceDictionary x:Key="Default">
+                                        <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarCurrentPressedForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="Light">
+                                        <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+                                        <StaticResource x:Key="BreadcrumbBarCurrentPressedForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+                                    </ResourceDictionary>
+                                </ResourceDictionary.ThemeDictionaries>
+                                <x:Double x:Key="BreadcrumbBarItemThemeFontSize">28</x:Double>
+                                <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
+                                <Thickness x:Key="BreadcrumbBarChevronPadding">12,4,12,0</Thickness>
+                                <FontWeight x:Key="BreadcrumbBarItemFontWeight">SemiBold</FontWeight>
+                            </ResourceDictionary>
+                        </BreadcrumbBar.Resources>
+                    </BreadcrumbBar>
+                    <!-- Rename the fan right at its name; pin it to the sidebar. -->
+                    <Button x:Name="RenameButton" Grid.Column="1" Style="{StaticResource SubtleButtonStyle}" Click="RenameFan_Click"
+                            Width="36" Height="36" Padding="0" Margin="8,4,0,0" VerticalAlignment="Center"
+                            ToolTipService.ToolTip="Rename" AutomationProperties.Name="Rename fan">
+                        <FontIcon Glyph="&#xE70F;" FontSize="16" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Button>
+                    <Button x:Name="PinButton" Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" Click="PinFan_Click"
+                            Width="36" Height="36" Padding="0" Margin="0,4,0,0" VerticalAlignment="Center">
+                        <FontIcon x:Name="PinGlyph" Glyph="&#xE718;" FontSize="16" />
+                    </Button>
+                </Grid>
+                <TextBlock x:Name="FanSubtitle" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,12" />
+
+                <!-- The other fans, one click away (in the list's order); the open one is highlighted. -->
+                <controls:WrapPanel x:Name="FanSwitcher" HorizontalSpacing="6" VerticalSpacing="6" Margin="0,0,0,4"
+                                    AutomationProperties.Name="Fans" />
+
+                <InfoBar x:Name="FanSafetyInfo" Severity="Error" IsClosable="False" IsOpen="False" Title="Safety: fans at 100%" Margin="0,0,0,8" />
+                <InfoBar x:Name="FanError" Severity="Warning" IsClosable="True" IsOpen="False" Title="Couldn't change this fan" Margin="0,0,0,8" />
+
+                <!-- Status + mode -->
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnSpacing="32" RowSpacing="16" controls:Responsive.LabelAbove="800" controls:Responsive.Hide="1:440">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Spacing="32" VerticalAlignment="Center">
+                            <StackPanel>
+                                <TextBlock Text="Now" Style="{StaticResource Caption}" />
+                                <TextBlock x:Name="StatusRpm" Text="â€”" Style="{StaticResource StatusValue}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Speed" Style="{StaticResource Caption}" />
+                                <TextBlock x:Name="StatusSpeed" Text="â€”" Style="{StaticResource StatusValue}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Source" Style="{StaticResource Caption}" />
+                                <TextBlock x:Name="StatusSource" Text="â€”" Style="{StaticResource StatusValue}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- Mode caption 12 px from the segments (column spacing 32 - 20); a narrow card leaves the caption out. -->
+                        <TextBlock Grid.Column="1" Text="Mode" Margin="0,0,-20,0" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <!-- Segmented choice of mode. -->
+                        <Border Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" CornerRadius="6" Padding="2" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                            <StackPanel x:Name="ModeButtons" Orientation="Horizontal" Spacing="2">
+                                <Button x:Name="ModeCurve" Content="Curve" Tag="Curve" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Speed follows one temperature" />
+                                <Button x:Name="ModeFixed" Content="Fixed" Tag="Fixed" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Same speed all the time" />
+                                <Button x:Name="ModeMix" Content="Mix" Tag="Mix" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Several curves with different temperatures, e.g. CPU and GPU" />
+                                <Button x:Name="ModeOffset" Content="Offset" Tag="Offset" MinWidth="72" Click="Mode_Click"
+                                        ToolTipService.ToolTip="Follows another fan, plus or minus a few percent" />
+                                <Button x:Name="ModeBios" Content="BIOS" Tag="Bios" MinWidth="72" Click="Mode_Click" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Curve -->
+                <Border x:Name="CurveCard" Style="{StaticResource Card}" Margin="0,4,0,0" Padding="20,16,20,12" Visibility="Collapsed">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnSpacing="24" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="CurveTitle" Text="Fan curve" FontWeight="SemiBold" />
+                                <TextBlock x:Name="CurveHint" Text="Drag points to shape the curve. Double-click to add a point, right-click a point to remove it." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="Temperature source" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                <ComboBox x:Name="SourceBox" MinWidth="240" MaxDropDownHeight="420" SelectionChanged="SourceBox_SelectionChanged" AutomationProperties.Name="Temperature source" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Mix: which curve is being edited, add / remove, how they combine. -->
+                        <Grid x:Name="MixBar" ColumnSpacing="12" Visibility="Collapsed" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Border CornerRadius="6" Padding="2" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                                    <StackPanel x:Name="MixParts" Orientation="Horizontal" Spacing="2" />
+                                </Border>
+                                <Button x:Name="MixAdd" Click="MixAdd_Click" AutomationProperties.Name="Add curve" ToolTipService.ToolTip="Add a curve">
+                                    <FontIcon Glyph="&#xE710;" FontSize="12" />
+                                </Button>
+                                <Button x:Name="MixRemove" Click="MixRemove_Click" AutomationProperties.Name="Remove this curve" ToolTipService.ToolTip="Remove this curve">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="12" />
+                                </Button>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="Fan follows" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                <ComboBox x:Name="MixFunctionBox" MinWidth="240" SelectionChanged="MixFunctionBox_SelectionChanged" AutomationProperties.Name="How the curves combine">
+                                    <x:String>The highest curve</x:String>
+                                    <x:String>The average of the curves</x:String>
+                                    <x:String>The lowest curve</x:String>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <controls:CurveEditor x:Name="CurveChart" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Fixed -->
+                <Border x:Name="FixedCard" Style="{StaticResource Card}" Margin="0,4,0,0" Visibility="Collapsed">
+                    <Grid ColumnSpacing="24" controls:Responsive.LabelAbove="560">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="44" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Fixed speed" FontWeight="SemiBold" />
+                            <TextBlock Text="Same speed regardless of temperature. At 0% the fan may stop." Style="{StaticResource Sub}" />
+                        </StackPanel>
+                        <Slider x:Name="FixedSlider" Grid.Column="1" Minimum="0" Maximum="100" StepFrequency="1" VerticalAlignment="Center"
+                                ValueChanged="FixedSlider_ValueChanged" AutomationProperties.Name="Fixed speed" IsThumbToolTipEnabled="False" />
+                        <TextBlock x:Name="FixedValue" Grid.Column="2" Text="50%" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Offset: follow another fan. -->
+                <StackPanel x:Name="OffsetCard" Spacing="4" Margin="0,4,0,0" Visibility="Collapsed">
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="24" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Follow another fan" FontWeight="SemiBold" />
+                                <TextBlock Text="Runs at the other fan's speed, whatever controls it, plus or minus the offset." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <ComboBox x:Name="FollowBox" Grid.Column="1" MinWidth="240" VerticalAlignment="Center"
+                                      SelectionChanged="FollowBox_SelectionChanged" AutomationProperties.Name="Fan to follow" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="24" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="240" />
+                                <ColumnDefinition Width="44" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Offset" />
+                                <TextBlock Text="Added to the other fan's speed. Below 0 this fan runs slower." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <Slider x:Name="OffsetSlider" Grid.Column="1" Minimum="-50" Maximum="50" StepFrequency="1" VerticalAlignment="Center"
+                                    ValueChanged="OffsetSlider_ValueChanged" AutomationProperties.Name="Offset" IsThumbToolTipEnabled="False" />
+                            <TextBlock x:Name="OffsetValue" Grid.Column="2" Text="0%" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- BIOS / graphics card -->
+                <Border x:Name="BiosCard" Style="{StaticResource Card}" Margin="0,4,0,0" Visibility="Collapsed">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="BiosTitle" Text="BIOS control" FontWeight="SemiBold" />
+                        <TextBlock x:Name="BiosText" Text="NotOnlyFans does not touch this fan. Speed follows the BIOS Smart Fan setting." Style="{StaticResource Sub}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Graphics card fans: how 0% works on this card. -->
+                <Border x:Name="GpuZeroCard" Style="{StaticResource Card}" Margin="0,4,0,0" Padding="20,12" Visibility="Collapsed">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Glyph="&#xE946;" FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock x:Name="GpuZeroTitle" Text="0% on the graphics card" />
+                            <TextBlock x:Name="GpuZeroText" Style="{StaticResource Sub}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- The last 5 minutes: the fan's speed, and what drives it (the curve's temperature, the followed fan). -->
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Last 5 minutes" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,20,0,4" />
+                    <Border Style="{StaticResource Card}" Padding="20,14,20,12">
+                        <StackPanel>
+                            <TextBlock x:Name="SpeedChartTitle" Text="Speed" Style="{StaticResource Sub}" Margin="0,0,0,10" />
+                            <controls:HistoryChart x:Name="SpeedChart" Height="88" />
+                            <TextBlock x:Name="DriverChartTitle" Style="{StaticResource Sub}" Margin="0,18,0,10" />
+                            <controls:HistoryChart x:Name="DriverChart" Height="88" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Response: how the curve's speed changes over time (curve mode). -->
+                <StackPanel x:Name="ResponseSection" Spacing="4" Visibility="Collapsed">
+                    <TextBlock Text="Response" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,20,0,4" />
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="16" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Smooth transitions" />
+                                <TextBlock Text="Speed glides to the target instead of jumping." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <TextBlock x:Name="SmoothLabel" Grid.Column="1" Text="On" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                            <ToggleSwitch x:Name="SmoothSwitch" Grid.Column="2" OnContent="" OffContent="" MinWidth="0" Toggled="Smooth_Toggled" AutomationProperties.Name="Smooth transitions" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="16" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Max change speed" />
+                                <TextBlock Text="How fast the fan may speed up or slow down" Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <Slider x:Name="MaxChangeSlider" Grid.Column="1" Minimum="1" Maximum="20" StepFrequency="1" VerticalAlignment="Center"
+                                    IsThumbToolTipEnabled="False" ValueChanged="MaxChange_ValueChanged" AutomationProperties.Name="Max change speed" />
+                            <TextBlock x:Name="MaxChangeValue" Grid.Column="2" Text="5 %/s" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="12" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="28" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Hysteresis" />
+                                <TextBlock Text="Temperature must drop this much before the fan slows down" Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <controls:Stepper x:Name="HysteresisBox" Grid.Column="1" Minimum="0" Maximum="15" SmallChange="1" LargeChange="5"
+                                       AutomationProperties.Name="Hysteresis in Â°C" />
+                            <TextBlock Grid.Column="2" Text="Â°C" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="12" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="28" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Delay before slowing down" />
+                                <TextBlock Text="Ignores short temperature dips, e.g. loading screens in games" Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <controls:Stepper x:Name="DelayBox" Grid.Column="1" Minimum="0" Maximum="60" SmallChange="1" LargeChange="5"
+                                       AutomationProperties.Name="Delay in seconds" />
+                            <TextBlock Grid.Column="2" Text="s" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Limits: stall protection (curve and fixed). -->
+                <StackPanel x:Name="LimitsSection" Spacing="4" Visibility="Collapsed">
+                    <TextBlock Text="Limits" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,20,0,4" />
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="16" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow stop" />
+                                <TextBlock Text="The fan may stand still when the curve says 0%. Off: it never goes below the minimum." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <TextBlock x:Name="AllowStopLabel" Grid.Column="1" Text="On" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                            <ToggleSwitch x:Name="AllowStopSwitch" Grid.Column="2" OnContent="" OffContent="" MinWidth="0" Toggled="AllowStop_Toggled" AutomationProperties.Name="Allow stop" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="12" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="28" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Start speed" />
+                                <TextBlock Text="Kick needed to spin up from standstill (held 3 s), then drops to the curve. 0 = no kick." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <controls:Stepper x:Name="StartBox" Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
+                                       AutomationProperties.Name="Start speed in percent" />
+                            <TextBlock Grid.Column="2" Text="%" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="12" controls:Responsive.LabelAbove="560">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="28" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Minimum while running" />
+                                <TextBlock Text="Lowest speed at which the fan still spins steadily. 0 = no minimum." Style="{StaticResource Sub}" />
+                            </StackPanel>
+                            <controls:Stepper x:Name="MinBox" Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
+                                       AutomationProperties.Name="Minimum speed in percent" />
+                            <TextBlock Grid.Column="2" Text="%" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="20,12">
+                        <Grid ColumnSpacing="16" RowSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Calibration" />
+                                <TextBlock x:Name="CalibrationText" Style="{StaticResource Sub}" />
+                                <TextBlock x:Name="CalibrationLast" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed" />
+                            </StackPanel>
+                            <Button x:Name="CalibrateButton" Grid.Column="1" Content="Calibrate" MinWidth="96" VerticalAlignment="Center" Click="Calibrate_Click" />
+                            <ProgressBar x:Name="CalibrationBar" Grid.Row="1" Grid.ColumnSpan="2" Maximum="100" Visibility="Collapsed"
+                                         AutomationProperties.Name="Calibration progress" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <TextBlock x:Name="NoControlText" Visibility="Collapsed" Margin="0,4,0,0" Style="{StaticResource Sub}"
+                           Text="This fan reports its speed but can't be controlled from Windows." />
+
+                <TextBlock x:Name="FanSafetyNote" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,20,0,0" />
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

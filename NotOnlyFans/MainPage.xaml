@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="NotOnlyFans.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:NotOnlyFans"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        App shell: left navigation like Windows 11 Settings.
+        Pages are created once and kept in memory, then swapped instantly
+        (no Frame navigation, no page transition) - see MainPage.xaml.cs.
+    -->
+    <NavigationView
+        x:Name="NavView"
+        PaneDisplayMode="Auto"
+        CompactModeThresholdWidth="0"
+        ExpandedModeThresholdWidth="820"
+        OpenPaneLength="280"
+        IsBackButtonVisible="Visible"
+        IsBackEnabled="False"
+        BackRequested="NavView_BackRequested"
+        IsPaneToggleButtonVisible="False"
+        DisplayModeChanged="NavView_DisplayModeChanged"
+        PaneOpening="NavView_PaneChanged"
+        PaneClosed="NavView_PaneChanged"
+        IsSettingsVisible="True"
+        AlwaysShowHeader="False"
+        SelectionChanged="NavView_SelectionChanged"
+        ItemInvoked="NavView_ItemInvoked">
+
+        <!--
+            As in Windows Settings, the pages lie straight on the window's Mica, like the pane: no lighter layer with
+            a border on two sides and one rounded corner (WinUI's default), which ran into the window's bottom edge.
+        -->
+        <NavigationView.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.ThemeDictionaries>
+                    <ResourceDictionary x:Key="Default">
+                        <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+                        <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="Light">
+                        <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+                        <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+                    </ResourceDictionary>
+                </ResourceDictionary.ThemeDictionaries>
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+                <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
+            </ResourceDictionary>
+        </NavigationView.Resources>
+
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Home" Tag="home">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE80F;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItem Content="Cooling" Tag="cooling">
+                <NavigationViewItem.Icon>
+                    <PathIcon Data="M 8.00,7.07 C 7.47,4.67 7.87,2.13 10.00,2.13 C 12.00,2.13 11.73,5.07 8.60,7.27 Z M 8.81,8.47 C 11.15,9.20 13.15,10.82 12.08,12.67 C 11.08,14.40 8.67,12.70 8.34,8.89 Z M 7.19,8.47 C 5.38,10.13 2.99,11.05 1.92,9.20 C 0.92,7.47 3.59,6.23 7.06,7.85 Z M 9.07,8.00 A 1.07,1.07 0 1 1 6.93,8.00 A 1.07,1.07 0 1 1 9.07,8.00 Z" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItem Content="Sensors" Tag="sensors">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE9D9;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItem Content="Colors" Tag="colors">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE790;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItem Content="OC" Tag="oc" ToolTipService.ToolTip="Graphics card overclocking">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xEC4A;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItemSeparator />
+            <!--
+                "Pinned" header with an Edit button (NavigationViewItemHeader can only show text).
+                Not a link: no hover, nothing happens on a click outside the button.
+            -->
+            <NavigationViewItem x:Name="PinnedHeader" SelectsOnInvoked="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                <NavigationViewItem.Resources>
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="Transparent" />
+                </NavigationViewItem.Resources>
+                <Grid>
+                    <TextBlock Text="Pinned" Style="{StaticResource NavigationViewItemHeaderTextStyle}" VerticalAlignment="Center" />
+                    <Button
+                        x:Name="EditPinsButton"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        MinWidth="32" Height="28" Padding="6,0"
+                        Click="EditPins_Click"
+                        ToolTipService.ToolTip="Change order or unpin"
+                        AutomationProperties.Name="Edit pinned">
+                        <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                    </Button>
+                </Grid>
+            </NavigationViewItem>
+
+            <!-- Pinned readings are added below this header from code (MainPage.xaml.cs). -->
+        </NavigationView.MenuItems>
+
+        <!-- Page host: content is swapped directly, no transition animation. -->
+        <ContentPresenter x:Name="ContentHost" />
+    </NavigationView>
+</Page>
