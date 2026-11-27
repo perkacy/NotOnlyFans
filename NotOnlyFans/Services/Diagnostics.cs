@@ -171,7 +171,7 @@ internal static partial class Diagnostics
         foreach (var light in colors.Lights)
         {
             string setting = colors.Settings.TryGetValue(light.Key, out var ls) ? $"set: {ls.Effect}" : "not set";
-            sb.AppendLine(Inv, $"{light.Name} · {light.Detail} · {light.Device} ({light.Kind}, {light.Key}): {setting}; effects {string.Join(", ", light.Effects)}");
+            sb.AppendLine(Inv, $"{light.Name} · {light.Detail} · {light.Device} ({light.Kind}, {light.Key}{(light.Experimental ? ", experimental" : "")}): {setting}; effects {string.Join(", ", light.Effects)}");
         }
         if (colors.Sync)
         {

@@ -102,6 +102,8 @@ internal sealed class ControlServer(SensorPoller poller, FanController controlle
                 Locked(() => lights.SetLight(request.Key, light), "The service could not change this light."),
             ColorPipe.SetColorSyncType when request.Sync is { } sync =>
                 Locked(() => lights.SetSync(sync, request.Light), "The service could not change the lights."),
+            ColorPipe.SetAppLightsType =>
+                Locked(() => lights.SetAppLights(request.Lights), "The service could not add the Dynamic Lighting devices."),
             OcPipe.ApplyOcType when request.Oc is { } setting =>
                 Locked(() => oc.Apply(request.Key, setting), "The service could not change the graphics card."),
             OcPipe.ResetOcType =>

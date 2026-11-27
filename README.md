@@ -17,7 +17,11 @@ NotOnlyFans is two parts: a small **background service** that reads every sensor
   - Rename fans, change their order, pin them.
 - **Sensors**: every sensor LibreHardwareMonitor sees, grouped by device. Click a row for its last 5 minutes; hide what you don't need, rename, pin.
 - **Pinned**: chosen readings always in the sidebar and in the tray icon's tooltip.
-- **Colors**: motherboard and graphics-card RGB, static or effects, or a color that follows a temperature. Supported now: MSI Mystic Light boards (USB HID) and Gigabyte RGB Fusion 1 graphics cards.
+- **Colors**: motherboard and graphics-card RGB, static or effects, or a color that follows a temperature. Supported now:
+  - **Windows Dynamic Lighting** devices (keyboards, mice and other HID LampArray devices). Windows hands these to apps, not services, so the app drives them while it runs (window or tray). To keep them while it is in the tray, choose NotOnlyFans under Settings › Personalization › Dynamic Lighting › Background light control.
+  - MSI Mystic Light boards (USB HID) and Gigabyte RGB Fusion 1 graphics cards.
+  - Experimental, not yet tried on real hardware: ASUS Aura (USB), Gigabyte RGB Fusion 2 (USB, all lights together) and ASRock Polychrome (USB) motherboards. If one misbehaves, use Settings › Copy diagnostics and open an issue.
+  - Protocols of the vendor controllers are reimplemented from public descriptions (the OpenRGB project documents many); no code is taken from other projects.
 - **OC**: graphics card core and memory clock offsets and the power limit, optionally applied when Windows starts — but never after a crash of Windows or the graphics driver.
   - NVIDIA GeForce (NVAPI and NVML).
   - AMD Radeon RX 6000 and newer (ADLX): highest GPU and memory clock as offsets from the default, power limit in %. *Experimental: not tested on an AMD card yet.*
@@ -87,7 +91,7 @@ The first run makes a self-signed code-signing certificate in your user certific
 
 | Project | What it is |
 |---|---|
-| `NotOnlyFans.Service` | Windows service (.NET worker, Local System). Reads sensors with [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) once a second, runs fan curves and the safety rule, drives RGB (own drivers) and graphics card overclocking (NVIDIA NVAPI/NVML, AMD ADLX, Intel IGCL — the libraries that come with each driver). Settings in `%ProgramData%\NotOnlyFans`. |
+| `NotOnlyFans.Service` | Windows service (.NET worker, Local System). Reads sensors with [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) once a second, runs fan curves and the safety rule, drives RGB (own drivers; Dynamic Lighting devices through the app) and graphics card overclocking (NVIDIA NVAPI/NVML, AMD ADLX, Intel IGCL — the libraries that come with each driver). Settings in `%ProgramData%\NotOnlyFans`. |
 | `NotOnlyFans` | WinUI 3 app (Windows App SDK), packaged as MSIX. Only shows and sends changes; it holds no hardware access. |
 | `NotOnlyFans.Contracts` | The messages both sides share (JSON, source-generated). |
 

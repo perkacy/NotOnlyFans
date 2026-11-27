@@ -34,8 +34,11 @@ internal sealed class LightController(SensorPoller poller, ILogger log) : IDispo
         State = Load();
         Detect<MsiMysticLight>("MSI motherboard", MsiMysticLight.TryOpen);
         Detect<GigabyteGpuLight>("Gigabyte graphics card", GigabyteGpuLight.TryOpen);
+        Detect<AsusAuraLight>("ASUS motherboard", AsusAuraLight.TryOpen);
+        Detect<GigabyteFusion2Light>("Gigabyte motherboard", GigabyteFusion2Light.TryOpen);
+        Detect<AsrockPolychromeLight>("ASRock motherboard", AsrockPolychromeLight.TryOpen);
 
-        State.Lights = _devices.SelectMany(d => d.Lights).ToList();
+        State.Lights = AllLights();
         foreach (var device in _devices)
         {
             Try(device.Refresh, "Reading lights");
@@ -64,6 +67,65 @@ internal sealed class LightController(SensorPoller poller, ILogger log) : IDispo
         {
             log.LogWarning(ex, "Looking for {What} lights failed.", what);
         }
+    }
+
+    /// <summary>
+    /// Windows Dynamic Lighting devices. Windows gives them only to apps of the signed-in user, so the window app
+    /// drives them: it reports them here (<see cref="SetAppLights"/>) and shows what <see cref="State"/> says for them.
+    /// Here they are lights like any other: listed, set, synced, temperature colors worked out.
+    /// </summary>
+    private readonly AppLights _appLights = new();
+
+    private List<LightInfo> AllLights() => [.. _devices.SelectMany(d => d.Lights), .. _appLights.Lights];
+
+    public string? SetAppLights(List<LightInfo>? lights)
+    {
+        if (lights is null || lights.Count > 32)
+        {
+            return "Too many lights.";
+        }
+        static string Cut(string? s, int max) => s is null ? "" : s.Length <= max ? s : s[..max];
+        var clean = new List<LightInfo>();
+        foreach (var l in lights)
+        {
+            if (l?.Key is not { Length: > 5 and <= 64 } key || !key.StartsWith(AppLights.Prefix, StringComparison.Ordinal)
+                || clean.Any(c => c.Key == key))
+            {
+                return "Not a Dynamic Lighting device.";
+            }
+            clean.Add(new LightInfo
+            {
+                Key = key,
+                Name = Cut(l.Name, 80),
+                Detail = Cut(l.Detail, 120),
+                Device = Cut(l.Device, 80),
+                Kind = "DynamicLighting",
+                Effects = [LightEffect.Static, LightEffect.Breathing, LightEffect.Rainbow, LightEffect.Temperature, LightEffect.Off],
+            });
+        }
+        static string Id(LightInfo l) => $"{l.Key}\u0001{l.Name}\u0001{l.Detail}\u0001{l.Device}";
+        if (clean.Select(Id).SequenceEqual(_appLights.Lights.Select(Id)))
+        {
+            return null;
+        }
+
+        foreach (var old in _appLights.Lights)
+        {
+            _deviceOf.Remove(old.Key);
+            _shown.Remove(old.Key);
+            _unsaved.Remove(old.Key);
+            State.Live.Remove(old.Key);
+        }
+        _appLights.Set(clean);
+        foreach (var light in clean)
+        {
+            _deviceOf[light.Key] = _appLights;
+        }
+        State.Lights = AllLights();
+        log.LogInformation("Dynamic Lighting devices from the app: {Lights}.", clean.Count == 0 ? "none" : string.Join(", ", clean.Select(l => l.Name)));
+        Show(clean.Select(l => l.Key), save: false, settle: false);   // works out temperature colors for them
+        StateChanged?.Invoke(State);
+        return null;
     }
 
     /// <summary>The setting a light follows now: all of them with Sync all, else its own (null = leave it alone).</summary>
@@ -165,7 +227,7 @@ internal sealed class LightController(SensorPoller poller, ILogger log) : IDispo
     /// <summary>Every second, after the sensors are read: temperature colors, and storing settled choices.</summary>
     public void Tick()
     {
-        if (_devices.Count == 0)
+        if (State.Lights.Count == 0)
         {
             return;
         }
@@ -275,7 +337,19 @@ internal sealed class LightController(SensorPoller poller, ILogger log) : IDispo
         {
             warnings.Add("MSI Center's Mystic Light is running. It can change the motherboard lights back; turn off Mystic Light in MSI Center.");
         }
-        if (_devices.Count > 0 && Running("OpenRGB", "SignalRgb", "SignalRgbLauncher"))
+        if (_devices.OfType<AsusAuraLight>().Any() && Running("LightingService", "ArmouryCrate"))
+        {
+            warnings.Add("ASUS Armoury Crate (Aura) is running. It can change the motherboard lights back; turn off Aura in Armoury Crate.");
+        }
+        if (_devices.OfType<GigabyteFusion2Light>().Any() && Running("RGBFusion", "GCC", "GigabyteControlCenter"))
+        {
+            warnings.Add("Gigabyte RGB Fusion is running. It can change the motherboard lights back; close it.");
+        }
+        if (_devices.OfType<AsrockPolychromeLight>().Any() && Running("PolychromeRGB", "ASRPolychromeRGB", "AsrPolychromeSync"))
+        {
+            warnings.Add("ASRock Polychrome RGB is running. It can change the motherboard lights back; close it.");
+        }
+        if (State.Lights.Count > 0 && Running("OpenRGB", "SignalRgb", "SignalRgbLauncher"))
         {
             warnings.Add("Another lighting app (OpenRGB or SignalRGB) is running. Two apps changing the same lights will fight; close one.");
         }

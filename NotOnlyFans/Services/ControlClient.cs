@@ -44,6 +44,12 @@ public sealed class ControlClient
     public Task<string?> SetColorSyncAsync(bool sync, LightSetting? all) =>
         SendLatestAsync(SyncSlot, new ControlRequest { Type = ColorPipe.SetColorSyncType, Sync = sync, Light = all });
 
+    private const string AppLightsSlot = "\u0001appLights";
+
+    /// <summary>The Windows Dynamic Lighting devices this app drives (see <see cref="DynamicLighting"/>).</summary>
+    public Task<string?> SetAppLightsAsync(List<LightInfo> lights) =>
+        SendLatestAsync(AppLightsSlot, new ControlRequest { Type = ColorPipe.SetAppLightsType, Lights = lights });
+
     private const string OcSlot = "\u0003";   // + card key: never shares a slot with fans or lights
 
     /// <summary>Applies an overclock to a card now (the service keeps it); null on success, else a message for the user.</summary>

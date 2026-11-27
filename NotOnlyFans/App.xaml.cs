@@ -119,6 +119,10 @@ namespace NotOnlyFans
             };
             Sensors.Start();
 
+            // Windows Dynamic Lighting devices are driven from here (Windows gives them to apps, not to the service).
+            Lighting = new DynamicLighting(DispatcherQueue.GetForCurrentThread());
+            Lighting.Start();
+
             // The pinned readings over games (shown again at start if it was on). Before the window: Settings uses it.
             Overlay = new GameOverlay();
 
@@ -163,6 +167,8 @@ namespace NotOnlyFans
 
         /// <summary>The game overlay (pinned readings over everything; its hotkeys work while the window is hidden).</summary>
         public static GameOverlay Overlay { get; private set; } = null!;
+
+        public static DynamicLighting Lighting { get; private set; } = null!;
 
         /// <summary>The one window (it may be hidden in the tray).</summary>
         public static MainWindow Window { get; private set; } = null!;

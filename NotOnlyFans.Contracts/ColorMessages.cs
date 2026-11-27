@@ -13,6 +13,9 @@ public static class ColorPipe
     public const string ColorsType = "colors";
     public const string SetColorType = "setColor";
     public const string SetColorSyncType = "setColorSync";
+
+    /// <summary>The window app reports the Windows Dynamic Lighting devices it drives (<see cref="ControlRequest.Lights"/>).</summary>
+    public const string SetAppLightsType = "setAppLights";
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<LightEffect>))]
@@ -95,10 +98,19 @@ public sealed class LightInfo
     /// <summary>The device it belongs to, e.g. "MSI PRO Z690-A WIFI DDR4".</summary>
     public string Device { get; set; } = "";
 
-    /// <summary>"Header", "Gpu".</summary>
+    /// <summary>"Header", "Board", "Gpu", "DynamicLighting" (a Windows Dynamic Lighting device, driven by the window app).</summary>
     public string Kind { get; set; } = "";
 
     public List<LightEffect> Effects { get; set; } = [];
+
+    /// <summary>Breathing and Rainbow run at the controller's one speed (Slow / Medium / Fast change nothing).</summary>
+    public bool SpeedFixed { get; set; }
+
+    /// <summary>Rainbow always shows at full brightness (the controller has no brightness setting; colors are dimmed by NotOnlyFans).</summary>
+    public bool RainbowBrightnessFixed { get; set; }
+
+    /// <summary>The driver was written from a protocol description and not yet tried on this kind of device.</summary>
+    public bool Experimental { get; set; }
 
     /// <summary>
     /// What the light shows now when NotOnlyFans has not set it (read from the device), if the device can tell

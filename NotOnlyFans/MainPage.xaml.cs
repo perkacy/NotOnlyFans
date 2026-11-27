@@ -111,7 +111,7 @@ namespace NotOnlyFans
             Unavailable.Mark(CoolingItem, cooling);
 
             Unavailable.Mark(ColorsItem, App.Sensors.Colors is { Lights.Count: 0 }
-                ? "No RGB lights NotOnlyFans can drive were found. Supported so far: MSI Mystic Light motherboards and Gigabyte RGB Fusion 1 graphics cards."
+                ? "No RGB lights NotOnlyFans can drive were found. Supported so far: Windows Dynamic Lighting devices, ASUS Aura, Gigabyte RGB Fusion 2, ASRock Polychrome and MSI Mystic Light motherboards, and Gigabyte RGB Fusion 1 graphics cards."
                 : null);
 
             string? oc = App.Sensors.Oc is not { } state ? null

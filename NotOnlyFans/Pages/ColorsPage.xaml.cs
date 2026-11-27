@@ -148,6 +148,7 @@ namespace NotOnlyFans.Pages
                 var lights = state?.Lights ?? [];
                 NoLightsInfo.IsOpen = state is not null && lights.Count == 0;
                 RefreshWarnings(state?.Warnings ?? []);
+                DynamicLightingInfo.IsOpen = !_dynamicLightingClosed && lights.Any(l => l.Kind == "DynamicLighting");
 
                 BuildCards(lights);
                 if (_selected is null || lights.All(l => l.Key != _selected))
@@ -330,8 +331,10 @@ namespace NotOnlyFans.Pages
             var card = _cards[light.Key];
             string name = NameOf(light);
             card.Name.Text = name;
-            card.Detail.Text = light.Detail;
-            ToolTipService.SetToolTip(card.Button, $"{light.Device} · {light.Detail}");
+            card.Detail.Text = light.Experimental ? light.Detail + " · experimental" : light.Detail;
+            ToolTipService.SetToolTip(card.Button, light.Experimental
+                ? $"{light.Device} · {light.Detail}\nExperimental: written from a description of the controller and not yet tried on this kind of device. If it doesn't work, use Copy diagnostics in Settings and report it."
+                : $"{light.Device} · {light.Detail}");
             AutomationProperties.SetName(card.Button, name);
 
             var setting = Setting(light.Key);
@@ -416,6 +419,16 @@ namespace NotOnlyFans.Pages
             OffText.Text = sync ? "Lighting is off for all lights" : "Lighting is off for this light";
             BrightnessCard.Visibility = Show(effect is not null and not LightEffect.Off);
             SpeedCard.Visibility = Show(effect is LightEffect.Breathing or LightEffect.Rainbow);
+
+            // What a controller can't change stays greyed, with the reason on hover.
+            var fixedSpeed = shown.FirstOrDefault(l => l.SpeedFixed);
+            Unavailable.SetCard(SpeedCard, fixedSpeed is null ? null
+                : sync ? $"{NameOf(fixedSpeed)} runs its effects at one speed." : "This light runs its effects at one speed.",
+                [.. SpeedButtons.Children.OfType<Button>()]);
+            var fullRainbow = effect == LightEffect.Rainbow ? shown.FirstOrDefault(l => l.RainbowBrightnessFixed) : null;
+            Unavailable.SetCard(BrightnessCard, fullRainbow is null ? null
+                : sync ? $"{NameOf(fullRainbow)} shows the rainbow at full brightness." : "This light shows the rainbow at full brightness.",
+                BrightnessSlider);
 
             ColorHex.Text = setting.Color;
             MarkSwatches(Swatches, setting.Color);
@@ -565,6 +578,14 @@ namespace NotOnlyFans.Pages
             var effect = Enum.Parse<LightEffect>((string)((Button)sender).Tag);
             Change(s => s.Effect = effect);
         }
+
+        /// <summary>Closed by the user: stays closed until the app starts again.</summary>
+        private bool _dynamicLightingClosed;
+
+        private void DynamicLightingInfo_Closed(InfoBar sender, InfoBarClosedEventArgs args) => _dynamicLightingClosed = true;
+
+        private async void DynamicLightingSettings_Click(object sender, RoutedEventArgs e) =>
+            await Windows.System.Launcher.LaunchUriAsync(DynamicLighting.SettingsUri);
 
         private void Speed_Click(object sender, RoutedEventArgs e)
         {

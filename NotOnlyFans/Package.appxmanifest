@@ -4,11 +4,12 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap uap5 uap10 rescap systemai">
+  IgnorableNamespaces="uap uap3 uap5 uap10 rescap systemai">
 
   <Identity
     Name="3b77e012-8ffd-4b74-84be-7e8a4e5f8b17"
@@ -53,6 +54,10 @@
         <uap5:Extension Category="windows.startupTask">
           <uap5:StartupTask TaskId="NotOnlyFansStartup" Enabled="false" DisplayName="NotOnlyFans" />
         </uap5:Extension>
+        <!-- Windows Dynamic Lighting: lets the user pick NotOnlyFans for background light control (Settings › Personalization › Dynamic Lighting). -->
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="com.microsoft.windows.lighting" Id="NotOnlyFansLighting" DisplayName="NotOnlyFans" PublicFolder="Public" />
+        </uap3:Extension>
       </Extensions>
     </Application>
   </Applications>

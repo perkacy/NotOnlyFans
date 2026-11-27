@@ -75,7 +75,14 @@
                      Message="Lights are driven by the NotOnlyFans background service. Start it in Services, or install it with tools\Install-Service.ps1." />
             <InfoBar x:Name="NoLightsInfo" Severity="Informational" IsClosable="False" IsOpen="False"
                      Title="No lights found"
-                     Message="NotOnlyFans drives the lights it knows: so far MSI Mystic Light motherboards (PRO Z690-A) and Gigabyte RTX 3060 EAGLE OC graphics cards. More devices will come." />
+                     Message="NotOnlyFans drives the lights it knows: Windows Dynamic Lighting devices, ASUS Aura, Gigabyte RGB Fusion 2 and ASRock Polychrome motherboards (experimental), MSI Mystic Light motherboards (PRO Z690-A) and Gigabyte RTX 3060 EAGLE OC graphics cards. More devices will come." />
+            <InfoBar x:Name="DynamicLightingInfo" Severity="Informational" IsClosable="True" IsOpen="False"
+                     Closed="DynamicLightingInfo_Closed" Title="Dynamic Lighting devices"
+                     Message="Windows lets NotOnlyFans drive these while its window is in front. To keep your colors while it's in the tray, choose NotOnlyFans under Background light control in Windows Settings.">
+                <InfoBar.ActionButton>
+                    <HyperlinkButton Content="Open Dynamic Lighting settings" Click="DynamicLightingSettings_Click" />
+                </InfoBar.ActionButton>
+            </InfoBar>
             <StackPanel x:Name="WarningBars" Spacing="4" />
             <InfoBar x:Name="ErrorInfo" Severity="Warning" IsClosable="True" IsOpen="False" Title="Couldn't change the light" />
 

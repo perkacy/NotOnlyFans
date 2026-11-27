@@ -290,6 +290,9 @@ public sealed class ControlRequest
     /// <summary>For <see cref="ColorPipe.SetColorSyncType"/>: Sync all on or off.</summary>
     public bool? Sync { get; set; }
 
+    /// <summary>For <see cref="ColorPipe.SetAppLightsType"/>: the Dynamic Lighting devices the window app drives (keys start with "lamp/").</summary>
+    public List<LightInfo>? Lights { get; set; }
+
     /// <summary>For <see cref="OcPipe.ApplyOcType"/> (Key = card key).</summary>
     public OcSetting? Oc { get; set; }
 
